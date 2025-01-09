@@ -28,7 +28,5 @@ The NCBI Data Fetcher is a suite of Streamlit-based applications designed to fet
    ```bash
    git clone https://github.com/eigengram/Streamlit_NCBI.git
    cd Streamlit_NCBI
-
-Install the required dependencies:pip install -r requirements.txt
-
-Run all the applications using command streamlit run {name of file}.py
+   pip install -r requirements.txt
+   streamlit run {name of file}.py

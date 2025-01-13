@@ -2,7 +2,7 @@ import streamlit as st
 import jwt  # from PyJWT
 
 # Constants
-SECRET_KEY = "MY_SHARED_SECRET"
+SECRET_KEY="myrealnameisyash"
 
 # Token verification function
 def verify_token(token: str):

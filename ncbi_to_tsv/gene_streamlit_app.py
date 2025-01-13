@@ -4,7 +4,7 @@ from Bio import Entrez
 import pandas as pd
 
 # Constants
-SECRET_KEY = "MY_SHARED_SECRET"
+SECRET_KEY="myrealnameisyash"
 Entrez.email = "your.email@example.com"  # Set your email here
 
 def verify_token(token: str):

@@ -4,7 +4,7 @@ import pandas as pd
 import jwt  # from PyJWT
 
 # Constants
-SECRET_KEY = "MY_SHARED_SECRET"
+SECRET_KEY="myrealnameisyash"
 Entrez.email = "your.email@example.com"  # Set your email for NCBI API compliance
 
 def verify_token(token: str):

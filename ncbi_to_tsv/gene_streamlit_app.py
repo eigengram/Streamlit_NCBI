@@ -1,18 +1,53 @@
 import streamlit as st
+import jwt  # from PyJWT
 from Bio import Entrez
 import pandas as pd
 
+# Constants
+SECRET_KEY = "MY_SHARED_SECRET"
+Entrez.email = "your.email@example.com"  # Set your email here
+
+def verify_token(token: str):
+    """Verify the JWT token."""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        return payload
+    except jwt.ExpiredSignatureError:
+        st.error("Token has expired. Please log in again.")
+    except jwt.InvalidTokenError:
+        st.error("Invalid token. Please log in again.")
+    return None
+
 def fetch_gene_details(accession):
+    """Fetch gene details using Entrez."""
     handle = Entrez.efetch(db="nucleotide", id=accession, rettype="gb", retmode="xml")
     records = Entrez.read(handle)
     return records
 
 def read_accession_numbers(file):
+    """Read accession numbers from a file."""
     accession_numbers = [line.decode('utf-8').strip() for line in file.readlines()]
     return accession_numbers
 
 def main():
-    # Streamlit app
+    # 1. Grab the token from ?token=<JWT> in the URL
+    params = st.experimental_get_query_params()
+    token = params.get("token", [None])[0]
+
+    # 2. If no token, prompt the user to come from the auth app
+    if not token:
+        st.warning("No token found. Please log in from your main app.")
+        st.stop()
+
+    # 3. Verify the token
+    payload = verify_token(token)
+    if not payload:
+        st.stop()
+
+    # 4. If valid, proceed with your app logic
+    st.write(f"Welcome, {payload.get('sub')}!")  # Display user info from JWT token
+
+    # Gene Details Fetcher
     st.title("Gene Details Fetcher")
     st.write("Upload a text file containing Gene accession numbers to fetch their details.")
 
@@ -100,7 +135,7 @@ def main():
                     'Xrefs': xrefs,
                     'Features': gene_details_list
                 })
-            progress += 100//count_acc_nums
+            progress += 100 // count_acc_nums
             progress_bar.progress(progress)
         progress_bar.progress(100)
 
@@ -111,6 +146,5 @@ def main():
         st.write("### Gene Details")
         st.dataframe(df_gene_info)
 
-# Run the app
 if __name__ == "__main__":
     main()

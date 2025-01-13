@@ -1,25 +1,52 @@
 import streamlit as st
+import jwt  # from PyJWT
 import xml.etree.ElementTree as ET
 from Bio import Entrez
 import pandas as pd
 
-# Set your email here
-# Entrez.email = "your.email@example.com"
+# Constants
+SECRET_KEY="myrealnameisyash"
+# Entrez.email = "your.email@example.com"  # Set your email here
 
-# Function to fetch BioProject details
+def verify_token(token: str):
+    """Verify the JWT token."""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        return payload
+    except jwt.ExpiredSignatureError:
+        st.error("Token has expired. Please log in again.")
+    except jwt.InvalidTokenError:
+        st.error("Invalid token. Please log in again.")
+    return None
+
 def fetch_bioproject_details(accession):
+    """Fetch BioProject details using Entrez."""
     handle = Entrez.efetch(db="bioproject", id=accession, retmode="xml")
     xml_data = handle.read()
     handle.close()
     return xml_data
 
-# Function to read accession numbers from a file
 def read_accession_numbers(file):
+    """Read accession numbers from a file."""
     accession_numbers = [line.decode('utf-8').strip() for line in file.readlines()]
     return accession_numbers
 
 def main():
-    # Streamlit app
+    # Authenticate using JWT token
+    params = st.experimental_get_query_params()
+    token = params.get("token", [None])[0]
+
+    if not token:
+        st.warning("No token found. Please log in from your main app.")
+        st.stop()
+
+    payload = verify_token(token)
+    if not payload:
+        st.stop()
+
+    st.write(f"Welcome, {payload.get('sub')}!")  # Display user info from JWT token
+
+    # BioProject Details Fetcher
     st.title("BioProject Details Fetcher")
     st.write("Upload a text file containing BioProject accession numbers to fetch their details.")
 
@@ -36,9 +63,7 @@ def main():
         st.divider()
         st.write("Fetching data")
 
-        # Initialize a list to hold all BioProject info from all accessions
         all_bioproject_info = []
-
         progress_bar = st.progress(0)
         count_acc_nums = len(accession_numbers)
         progress = 0
@@ -83,9 +108,10 @@ def main():
                         
                         author_list = []
                         for author in publication.findall('.//Author'):
-                            author_name = {}
-                            author_name['First'] = author.find('.//First').text if author.find('.//First') is not None else 'N/A'
-                            author_name['Last'] = author.find('.//Last').text if author.find('.//Last') is not None else 'N/A'
+                            author_name = {
+                                'First': author.find('.//First').text if author.find('.//First') is not None else 'N/A',
+                                'Last': author.find('.//Last').text if author.find('.//Last') is not None else 'N/A'
+                            }
                             author_list.append(author_name)
                         
                         publications.append({
@@ -109,7 +135,7 @@ def main():
                     'Publications': publications
                 })
 
-            progress += 100//count_acc_nums
+            progress += 100 // count_acc_nums
             progress_bar.progress(progress)
         progress_bar.progress(100)
 
@@ -120,6 +146,5 @@ def main():
         st.write("### BioProject Details")
         st.dataframe(df_bioproject_info)
 
-# Run the app
 if __name__ == "__main__":
     main()

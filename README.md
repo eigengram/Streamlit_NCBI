@@ -30,3 +30,26 @@ The NCBI Data Fetcher is a suite of Streamlit-based applications designed to fet
    cd Streamlit_NCBI
    pip install -r requirements.txt
    streamlit run {name of file}.py
+
+# How to Verify a JWT Session in Streamlit
+
+This document explains how to **verify JWT tokens** in a **Streamlit application** so only authenticated users can access certain content.
+
+---
+
+## 1. Requirements
+
+- **Python 3.7+**  
+- **Streamlit** (`pip install streamlit`)  
+- **PyJWT** (`pip install pyjwt`)
+
+> **Important**: The package on PyPI is named **`pyjwt`**, but typically imported in code as `import jwt`.
+
+---
+
+## 2. Shared Secret Key
+
+Your authentication system (e.g., Next.js) signs tokens with a **secret key** or private key. You need the matching **secret/public key** in your Streamlit app to verify the tokens.
+
+```python
+SECRET_KEY = "MY_SHARED_SECRET"

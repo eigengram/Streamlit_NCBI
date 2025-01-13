@@ -2,19 +2,37 @@ import streamlit as st
 import xml.etree.ElementTree as ET
 from Bio import Entrez
 import pandas as pd
+import jwt  # from PyJWT
+
+# Constants
+SECRET_KEY = "MY_SHARED_SECRET"
+Entrez.email = "your.email@example.com"  # Set your email for NCBI API compliance
+
+def verify_token(token: str):
+    """Verify the JWT token."""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        return payload
+    except jwt.ExpiredSignatureError:
+        st.error("Token has expired. Please log in again.")
+    except jwt.InvalidTokenError:
+        st.error("Invalid token. Please log in again.")
+    return None
 
 def fetch_sra_details(accession):
+    """Fetch SRA details using Entrez."""
     handle = Entrez.efetch(db="sra", id=accession, retmode="xml")
     xml_data = handle.read()
     handle.close()
     return xml_data
 
 def read_accession_numbers(file):
+    """Read accession numbers from a file."""
     accession_numbers = [line.decode('utf-8').strip() for line in file.readlines()]
     return accession_numbers
 
-def main():
-    # Streamlit app
+def sra_details_fetcher():
+    """SRA Details Fetcher Logic."""
     st.title("SRA Details Fetcher")
     st.write("Upload a text file containing SRA accession numbers to fetch their details.")
 
@@ -57,17 +75,39 @@ def main():
                 })
 
             all_sra_info.extend(sra_info)
-            progress += 100//count_acc_nums
+            progress += 100 // count_acc_nums
             progress_bar.progress(progress)
         progress_bar.progress(100)
 
-        # Convert the list of all nucleotide info to DataFrame
+        # Convert the list of all SRA info to DataFrame
         df_sra_info = pd.DataFrame(all_sra_info)
 
         # Display the data
         st.write("### SRA Details")
         st.dataframe(df_sra_info)
 
-# Run the app
+def main():
+    """Main function with authentication and SRA details fetcher."""
+    # Grab the token from ?token=<JWT> in the URL
+    params = st.experimental_get_query_params()
+    token = params.get("token", [None])[0]
+
+    # If no token, prompt the user to come from the auth app
+    if not token:
+        st.warning("No token found. Please log in from your main app.")
+        st.stop()
+
+    # Verify the token
+    payload = verify_token(token)
+    if not payload:
+        # If invalid or expired, we've shown an error. Stop execution.
+        st.stop()
+
+    # If valid, proceed with the app logic
+    st.write(f"Welcome, {payload.get('sub')}!")  # Display user info from JWT token
+
+    # Call the SRA details fetcher
+    sra_details_fetcher()
+
 if __name__ == "__main__":
     main()
